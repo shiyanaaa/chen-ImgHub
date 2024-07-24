@@ -2,22 +2,18 @@
     <div class="login">
         <div class="login-container">
             <h1>Login</h1>
-            <el-input 
-                class="password-input" 
-                v-model="password" 
-                placeholder="输入认证码，若未设置留空即可~" 
-                type="password" 
-                show-password
-                @keyup.enter.native="login"
-                >
+            <el-input class="password-input" v-model="password" placeholder="输入认证码，若未设置留空即可~" type="password"
+                show-password @keyup.enter.native="login">
             </el-input>
-            <el-button class="submit" type="primary" @click="login">submit</el-button>
+            <el-button class="submit" type="primary" @click="login">提交</el-button>
         </div>
     </div>
 </template>
 
 <script>
 import cookies from 'vue-cookies'
+import { encode, decode } from "@/assets/base64.min.js";
+import axios from 'axios'
 export default {
     data() {
         return {
@@ -30,8 +26,18 @@ export default {
             if (this.password === '') {
                 this.password = 'unset'
             }
-            cookies.set('authCode', this.password, '14d')
-            this.$router.push('/')
+            const authCode = encode(`${this.password}-${Date.now()}`)
+            axios({
+                url: '/check' + '?authCode=' + authCode,
+                method: 'post',
+            }).then(()=>{
+                cookies.set('authCode', authCode, '14d')
+                this.$message.success('验证通过')
+                this.$router.push('/')
+            },()=>{
+                this.$message.error('验证失败')
+            })
+            
         }
     }
 }
@@ -47,6 +53,7 @@ export default {
     background-size: cover;
     background-attachment: fixed;
 }
+
 .login-container {
     display: flex;
     flex-direction: column;
@@ -60,14 +67,17 @@ export default {
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
 }
+
 .login-container:hover {
     box-shadow: 0 0 12px 4px rgba(0, 0, 0, 0.24);
     transform: translateY(-5px);
 }
+
 .password-input {
     margin-bottom: 15px;
     width: 30vw;
 }
+
 .submit {
     margin-top: 10px;
 }
